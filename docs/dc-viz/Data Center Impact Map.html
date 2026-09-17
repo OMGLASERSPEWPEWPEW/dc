@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dc — Data Center Community Impact</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Courier+Prime:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<style>
+  /* House design system · Night tokens (verbatim from tokens/colors.css .dark) */
+  :root{--bg:#0c0a05;--bg-card:#141109;--bg-chrome:#1a1610;--rule:#2b2720;--rule-soft:#211d17;--ink:#ebe5d6;--ink-dim:#9c9586;--ink-faint:#625b4c;--ink-ghost:#4f4a3e;--ink-whisper:#3f3a31;--accent:oklch(0.80 0.14 55);--accent-text:oklch(0.84 0.13 55);--accent-border:oklch(0.42 0.09 55);--accent-bg:oklch(0.20 0.04 55);--accent-on:#0c0a05;--live:oklch(0.74 0.16 145);--access:oklch(0.68 0.13 150);--danger:oklch(0.66 0.19 35);--member:oklch(0.62 0.13 235)}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Newsreader',Georgia,serif;font-size:14px;line-height:1.45;overflow:hidden}
+  a{color:var(--accent-text)} a:hover{color:var(--accent)}
+  .mono{font-family:'Courier Prime',monospace;text-transform:uppercase;letter-spacing:.12em}
+  .num{font-family:'JetBrains Mono',monospace}
+  #map{position:absolute;inset:0;background:var(--bg)}
+  .leaflet-tile-pane{filter:grayscale(1) invert(1) sepia(.45) brightness(.55) contrast(1.15)}
+  .leaflet-container{font-family:'Courier Prime',monospace}
+  .leaflet-control-attribution{background:color-mix(in oklab,var(--bg) 92%,transparent)!important;color:var(--ink-faint)!important;font-size:9px;letter-spacing:.04em}
+  .leaflet-control-attribution a{color:var(--ink-dim)!important}
+  .leaflet-top{top:64px}
+  .leaflet-bar{border:1px solid var(--rule)!important;box-shadow:none!important;border-radius:3px!important}
+  .leaflet-bar a{background:color-mix(in oklab,var(--bg) 92%,transparent)!important;color:var(--ink)!important;border-bottom-color:var(--rule)!important}
+  .leaflet-tooltip{background:color-mix(in oklab,var(--bg) 92%,transparent);color:var(--ink);border:1px solid var(--rule);border-radius:3px;box-shadow:none;padding:6px 9px;font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;backdrop-filter:blur(6px)}
+  .leaflet-tooltip::before{display:none}
+  .leaflet-tooltip i{font-family:'Newsreader',serif;font-style:italic;font-size:14px;text-transform:none;letter-spacing:0;display:block;margin-bottom:2px}
+
+  #top{position:absolute;top:0;left:0;right:0;z-index:1000;padding:12px 20px 10px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;background:color-mix(in oklab,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule)}
+  #top .mast{display:flex;align-items:baseline;gap:12px}
+  #top .mast b{font-family:'Courier Prime',monospace;font-weight:700;font-size:19px;letter-spacing:.04em}
+  #top .mast span{font-family:'Courier Prime',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+  #chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .chip{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:0 12px;height:30px;border-radius:14px;border:1px solid var(--rule);background:transparent;color:var(--ink-dim);cursor:pointer;display:flex;align-items:center;gap:7px;transition:color .12s,background .12s,border-color .12s}
+  .chip .dot{width:8px;height:8px;border-radius:9999px;background:var(--c)}
+  .chip.on{color:var(--accent-text);background:var(--accent-bg);border-color:var(--accent-border)}
+  .chip:not(.on) .dot{opacity:.3}
+
+  #key{position:absolute;right:20px;bottom:24px;z-index:900;padding:10px 12px;background:color-mix(in oklab,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border:1px solid var(--rule);border-radius:3px;display:grid;gap:5px;transition:bottom .3s cubic-bezier(.2,.8,.2,1)}
+  #key .row{display:flex;align-items:center;gap:8px;font-family:'Courier Prime',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim)}
+  #key .sw{width:10px;height:10px;border-radius:9999px;border:1px solid var(--ink-faint)}
+  #key .sz{display:flex;align-items:center;gap:6px}
+  #key .sz i{display:block;border-radius:9999px;background:var(--ink-faint)}
+
+  #sheet{position:absolute;left:0;right:0;bottom:0;z-index:1100;height:400px;background:color-mix(in oklab,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-top:1px solid var(--rule);border-radius:16px 16px 0 0;box-shadow:0 -14px 44px rgba(0,0,0,.75);transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+  #sheet.open{transform:none}
+  #sheet .inner{height:100%;overflow:auto;padding:0 20px 24px}
+  .shead{display:flex;align-items:flex-start;gap:14px;padding:16px 0 14px;border-bottom:1px solid var(--rule);position:sticky;top:0;background:color-mix(in oklab,var(--bg) 96%,transparent);z-index:2}
+  .shead h2{font-style:italic;font-weight:400;font-size:24px;margin:0 0 3px;line-height:1.15}
+  .shead .meta{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:9999px;border:1px solid var(--rule);font-size:9px;letter-spacing:.14em}
+  .pill .dot{width:7px;height:7px;border-radius:9999px;background:var(--c)}
+  .close{margin-left:auto;flex:none;width:44px;height:44px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:var(--ink);font-size:16px;cursor:pointer;font-family:'Courier Prime',monospace}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0 40px}
+  .sec{padding:16px 0;border-bottom:1px solid var(--rule-soft)}
+  .lbl{font-family:'Courier Prime',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .lbl b{color:var(--accent-text);font-weight:400;font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
+  .big{font-family:'JetBrains Mono',monospace;font-size:29px;line-height:1.05;color:var(--ink)}
+  .big small{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);margin-left:8px}
+  .sub{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-top:4px}
+  .homes{display:flex;flex-wrap:wrap;gap:3px 5px;margin:10px 0 6px;font-size:16px;line-height:1;color:var(--member)}
+  .homes .x{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-dim);align-self:center;margin-left:4px}
+  .sentence{font-style:italic;font-size:15px;color:var(--ink);margin:8px 0 0;text-wrap:pretty}
+  input[type=range]{width:100%;height:24px;margin:6px 0 0;accent-color:oklch(0.80 0.14 55);background:transparent}
+  .seg{display:flex;border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+  .seg button{flex:1;height:34px;border:0;background:transparent;color:var(--ink-dim);font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-right:1px solid var(--rule);transition:background .12s,color .12s}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:var(--accent);color:var(--accent-on)}
+  table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px}
+  td{padding:5px 0;border-bottom:1px solid var(--rule-soft);vertical-align:middle}
+  td.k{font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}
+  td.r{text-align:right;white-space:nowrap}
+  td .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:-1px}
+  .foot{font-family:'Courier Prime',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-ghost);padding-top:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .foot a{color:var(--ink-dim);text-decoration:none;border-bottom:1px solid var(--rule)}
+  #hint{position:absolute;left:20px;bottom:24px;z-index:900;font-style:italic;font-size:15px;color:var(--ink-dim);background:color-mix(in oklab,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border:1px solid var(--rule);border-radius:3px;padding:10px 14px;max-width:320px;text-wrap:pretty}
+  #sheet.open ~ #hint{display:none}
+  @media (max-width:767px){#sheet{height:58vh}#key{display:none}#hint{max-width:calc(100% - 40px)}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="top">
+  <div class="mast"><b>dc</b><span id="count">Data Center Community Impact</span></div>
+  <div id="chips">
+    <button class="chip on" data-s="operating" style="--c:var(--live)"><span class="dot"></span>Operating</button>
+    <button class="chip on" data-s="under_construction" style="--c:var(--accent)"><span class="dot"></span>Under construction</button>
+    <button class="chip on" data-s="proposed" style="--c:var(--member)"><span class="dot"></span>Proposed</button>
+  </div>
+</div>
+
+<div id="key">
+  <div class="row"><span class="sw" style="background:var(--live);border-color:transparent"></span>Operating</div>
+  <div class="row"><span class="sw" style="background:var(--accent);border-color:transparent"></span>Under construction</div>
+  <div class="row"><span class="sw" style="background:var(--member);border-color:transparent"></span>Proposed</div>
+  <div class="row sz" style="margin-top:4px"><i style="width:8px;height:8px"></i><i style="width:13px;height:13px"></i><i style="width:20px;height:20px"></i>&nbsp;&lt;50 · 50–200 · 200+ MW</div>
+</div>
+
+<div id="sheet">
+  <div class="inner">
+    <div class="shead">
+      <div>
+        <h2 id="s-name"></h2>
+        <div class="meta"><span id="s-op"></span><span>·</span><span id="s-loc"></span><span class="pill" id="s-status"><span class="dot"></span><span></span></span></div>
+      </div>
+      <button class="close" id="close" aria-label="Close">✕</button>
+    </div>
+
+    <div class="cols">
+      <div>
+        <div class="sec">
+          <div class="lbl"><span>Size of the filing</span><b id="mw-v"></b></div>
+          <input type="range" id="mw" min="10" max="2500" step="10">
+          <div class="sub" id="mw-note"></div>
+        </div>
+        <div class="sec">
+          <div class="lbl"><span>Cooling method</span><b id="wue-v"></b></div>
+          <div class="seg" id="cool">
+            <button data-c="air">Air</button><button data-c="hybrid">Hybrid</button><button data-c="evaporative">Evaporative</button><button data-c="liquid">Liquid</button>
+          </div>
+          <input type="range" id="wue" min="0.1" max="3" step="0.1">
+          <div class="sub">Water usage effectiveness · L per kWh</div>
+        </div>
+        <p class="sentence" id="tradeoff"></p>
+      </div>
+
+      <div>
+        <div class="sec">
+          <div class="lbl"><span>Water · every day</span></div>
+          <div class="big"><span id="gal"></span><small>gallons</small></div>
+          <div class="sub" id="ltr"></div>
+          <div class="homes" id="homes"></div>
+          <div class="sub" id="homes-n"></div>
+        </div>
+        <div class="sec">
+          <div class="lbl"><span>Noise · how far it carries</span><b id="src-v"></b></div>
+          <table id="rings"></table>
+          <p class="sentence" id="noise-sentence"></p>
+        </div>
+        <div class="foot"><span id="s-src"></span><span>Seed data · locations and MW approximate</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="hint">Tap a site to see what it drinks and how far you can hear it. Drag the size slider to model a different filing.</div>
+
+<script>
+const DATA = [
+ {n:"Ashburn Campus",op:"Equinix",lat:39.018,lng:-77.472,city:"Ashburn",st:"VA",mw:250,cool:"hybrid",s:"operating"},
+ {n:"Prineville Data Center",op:"Meta",lat:44.298,lng:-120.840,city:"Prineville",st:"OR",mw:150,cool:"evaporative",s:"operating"},
+ {n:"The Dalles",op:"Google",lat:45.602,lng:-121.185,city:"The Dalles",st:"OR",mw:100,cool:"evaporative",s:"operating"},
+ {n:"Columbia Data Center",op:"Microsoft",lat:47.228,lng:-119.853,city:"Quincy",st:"WA",mw:200,cool:"evaporative",s:"operating"},
+ {n:"Maiden Data Center",op:"Apple",lat:35.571,lng:-81.216,city:"Maiden",st:"NC",mw:100,cool:"hybrid",s:"operating"},
+ {n:"Forest City",op:"Meta",lat:35.331,lng:-81.867,city:"Forest City",st:"NC",mw:120,cool:"evaporative",s:"operating"},
+ {n:"Council Bluffs",op:"Google",lat:41.221,lng:-95.862,city:"Council Bluffs",st:"IA",mw:300,cool:"evaporative",s:"operating"},
+ {n:"Altoona Data Center",op:"Meta",lat:41.650,lng:-93.480,city:"Altoona",st:"IA",mw:180,cool:"evaporative",s:"operating"},
+ {n:"West Des Moines Campus",op:"Microsoft",lat:41.561,lng:-93.760,city:"West Des Moines",st:"IA",mw:220,cool:"hybrid",s:"under_construction"},
+ {n:"Mesa Data Center",op:"Meta",lat:33.300,lng:-111.660,city:"Mesa",st:"AZ",mw:200,cool:"air",s:"under_construction"},
+ {n:"Goodyear Campus",op:"Microsoft",lat:33.420,lng:-112.390,city:"Goodyear",st:"AZ",mw:150,cool:"air",s:"operating"},
+ {n:"Temple Data Center",op:"Meta",lat:31.098,lng:-97.360,city:"Temple",st:"TX",mw:180,cool:"air",s:"under_construction"},
+ {n:"Midlothian",op:"Google",lat:32.482,lng:-96.995,city:"Midlothian",st:"TX",mw:120,cool:"evaporative",s:"operating"},
+ {n:"Stargate Abilene",op:"Crusoe · Oracle · OpenAI",lat:32.452,lng:-99.733,city:"Abilene",st:"TX",mw:1200,cool:"liquid",s:"under_construction"},
+ {n:"Hyperion",op:"Meta",lat:32.480,lng:-91.570,city:"Richland Parish",st:"LA",mw:2000,cool:"hybrid",s:"proposed"},
+ {n:"Project Rail",op:"Amazon",lat:41.700,lng:-86.510,city:"New Carlisle",st:"IN",mw:2200,cool:"air",s:"under_construction"},
+ {n:"Mount Pleasant Campus",op:"Microsoft",lat:42.710,lng:-87.830,city:"Mount Pleasant",st:"WI",mw:450,cool:"liquid",s:"under_construction"},
+ {n:"El Paso Data Center",op:"Meta",lat:31.900,lng:-106.300,city:"El Paso",st:"TX",mw:1000,cool:"hybrid",s:"proposed"},
+ {n:"Kansas City Campus",op:"Google",lat:39.300,lng:-94.600,city:"Kansas City",st:"MO",mw:400,cool:"hybrid",s:"proposed"},
+ {n:"Santa Clara Connected Campus",op:"Digital Realty",lat:37.370,lng:-121.970,city:"Santa Clara",st:"CA",mw:100,cool:"air",s:"operating"},
+ {n:"The Core Campus",op:"Switch",lat:36.070,lng:-115.140,city:"Las Vegas",st:"NV",mw:300,cool:"hybrid",s:"operating"},
+ {n:"Eagle Mountain",op:"Meta",lat:40.310,lng:-112.010,city:"Eagle Mountain",st:"UT",mw:200,cool:"evaporative",s:"operating"},
+ {n:"Colossus",op:"xAI",lat:35.050,lng:-90.150,city:"Memphis",st:"TN",mw:250,cool:"liquid",s:"operating"},
+ {n:"Umatilla Campus",op:"Amazon",lat:45.840,lng:-119.700,city:"Boardman",st:"OR",mw:200,cool:"evaporative",s:"operating"},
+ {n:"Clarksville Data Center",op:"Google",lat:36.480,lng:-87.360,city:"Clarksville",st:"TN",mw:300,cool:"hybrid",s:"proposed"},
+ {n:"Project Jupiter",op:"BorderPlex · Stack",lat:32.000,lng:-106.700,city:"Santa Teresa",st:"NM",mw:1200,cool:"liquid",s:"proposed"},
+ {n:"Frontier",op:"Vantage",lat:32.700,lng:-99.300,city:"Shackelford County",st:"TX",mw:1400,cool:"hybrid",s:"proposed"},
+ {n:"Bessemer Campus",op:"Project Marvel",lat:33.400,lng:-86.950,city:"Bessemer",st:"AL",mw:600,cool:"hybrid",s:"proposed"},
+];
+const STATUS = {operating:["Operating","var(--live)","oklch(0.74 0.16 145)"],under_construction:["Under construction","var(--accent)","oklch(0.80 0.14 55)"],proposed:["Proposed","var(--member)","oklch(0.62 0.13 235)"]};
+const WUE = {air:0.1,hybrid:1.0,evaporative:1.8,liquid:0.3};
+const NOISE_ADJ = {air:5,hybrid:2,evaporative:0,liquid:1};
+const RINGS = [[75,"oklch(0.66 0.19 35)",.40,"At the fence · hearing risk"],[65,"oklch(0.80 0.14 55)",.30,"Property line · conversation strained"],[55,"oklch(0.85 0.15 90)",.25,"Over most residential limits"],[45,"oklch(0.74 0.16 145)",.20,"Sleep disruption possible"],[35,"oklch(0.62 0.13 235)",.15,"Faint · ambient threshold"]];
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const fmtM = m => m>=1000 ? (m/1000).toFixed(m>=10000?0:1)+' km' : Math.round(m)+' m';
+const $ = id => document.getElementById(id);
+
+const map = L.map('map',{zoomControl:true,attributionControl:true}).setView([38.5,-96.5],4);
+map.zoomControl.setPosition('topright');
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19}).addTo(map);
+const ringLayer = L.layerGroup().addTo(map);
+const markers = L.layerGroup().addTo(map);
+const active = new Set(Object.keys(STATUS));
+let cur = null, model = null, curMarker = null;
+
+const radius = mw => mw<50?4:mw<200?6.5:10;
+function drawMarkers(){
+  markers.clearLayers();
+  let n=0;
+  DATA.forEach(d=>{
+    if(!active.has(d.s)) return; n++;
+    const m = L.circleMarker([d.lat,d.lng],{radius:radius(d.mw),color:'#0c0a05',weight:1.5,fillColor:STATUS[d.s][2],fillOpacity:cur&&cur!==d?.35:.95});
+    m.bindTooltip(`<i>${d.n}</i>${d.op} · ${d.mw} MW`,{direction:'top',offset:[0,-8]});
+    m.on('click',e=>{L.DomEvent.stop(e);open(d,m)});
+    m.addTo(markers);
+  });
+  $('count').textContent = `${n} sites · ${fmt(DATA.filter(d=>active.has(d.s)).reduce((a,d)=>a+d.mw,0))} MW filed`;
+}
+drawMarkers();
+
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+  const s=c.dataset.s; active.has(s)?active.delete(s):active.add(s); c.classList.toggle('on',active.has(s)); drawMarkers();
+});
+
+function open(d,m){
+  cur=d; curMarker=m; model={mw:d.mw,cool:d.cool,wue:WUE[d.cool]};
+  $('s-name').textContent=d.n; $('s-op').textContent=d.op; $('s-loc').textContent=`${d.city}, ${d.st}`;
+  const p=$('s-status'); p.style.setProperty('--c',STATUS[d.s][1]); p.lastElementChild.textContent=STATUS[d.s][0];
+  $('s-src').textContent=`Source · seed file · ${d.op}`;
+  $('mw').value=model.mw; $('wue').value=model.wue;
+  $('sheet').classList.add('open'); $('key').style.bottom='424px';
+  render(true); drawMarkers();
+}
+function close(){ cur=null; $('sheet').classList.remove('open'); $('key').style.bottom='24px'; ringLayer.clearLayers(); drawMarkers(); }
+$('close').onclick=close; map.on('click',()=>cur&&close());
+
+$('mw').oninput=e=>{model.mw=+e.target.value;render()};
+$('wue').oninput=e=>{model.wue=+e.target.value;render()};
+document.querySelectorAll('#cool button').forEach(b=>b.onclick=()=>{model.cool=b.dataset.c;model.wue=WUE[model.cool];$('wue').value=model.wue;render()});
+
+function calc(m){
+  const kwhDay=m.mw*1000*24, liters=m.wue*kwhDay, gal=liters*0.264172, homes=gal/300;
+  const units=Math.max(1,Math.round(m.mw/10));
+  const src=85+10*Math.log10(units)+NOISE_ADJ[m.cool];
+  const rings=RINGS.map(([thr,col,op,txt])=>({thr,col,op,txt,r:Math.pow(10,(src-thr)/20)}));
+  return {kwhDay,liters,gal,homes,units,src,rings};
+}
+
+function render(fly){
+  const c=calc(model), d=cur;
+  $('mw-v').textContent=`${fmt(model.mw)} MW`;
+  $('mw-note').textContent=model.mw===d.mw?`As filed · ${fmt(d.mw)} MW`:`Filed at ${fmt(d.mw)} MW · modeling ${model.mw>d.mw?'+':'−'}${fmt(Math.abs(model.mw-d.mw))} MW`;
+  $('wue-v').textContent=`WUE ${model.wue.toFixed(1)}`;
+  document.querySelectorAll('#cool button').forEach(b=>b.classList.toggle('on',b.dataset.c===model.cool));
+  $('gal').textContent=fmt(c.gal); $('ltr').textContent=`${fmt(c.liters)} liters · ${fmt(c.kwhDay/1000)} MWh of IT load`;
+  const per=c.homes>20?Math.ceil(c.homes/20):1, icons=Math.min(20,Math.max(1,Math.round(c.homes/per)));
+  $('homes').innerHTML='⌂'.repeat(icons).split('').map(g=>`<span>${g}</span>`).join('')+(per>1?`<span class="x">× ${fmt(per)}</span>`:'');
+  $('homes-n').textContent=`The daily water of ${fmt(c.homes)} homes`;
+  $('src-v').textContent=`${c.src.toFixed(0)} dBA at source`;
+  $('rings').innerHTML=c.rings.map(r=>`<tr><td class="k"><span class="sw" style="background:${r.col}"></span>${r.thr}${r===c.rings[0]?'+':''} dBA</td><td class="k">${r.txt}</td><td class="r">${fmtM(r.r)}</td></tr>`).join('');
+  const far=c.rings[3].r, blocks=far/100;
+  $('noise-sentence').textContent=c.units>1
+    ?`${fmt(c.units)} chiller clusters running together. Sleep can be disturbed about ${blocks<1.5?'a block':fmt(blocks)+' blocks'} out.`
+    :`A single chiller cluster. Beyond the adjacent lot you would barely notice it.`;
+  $('tradeoff').textContent={
+    air:'Air cooling saves the water but runs the biggest fans. Quieter is thirstier; this is the trade every filing makes.',
+    hybrid:'Hybrid cooling splits the difference: some water, some fan noise, and a footprint that shifts with the season.',
+    evaporative:'Evaporative cooling is the quiet option. It is also the one that drinks the most.',
+    liquid:'Direct liquid cooling keeps both water and noise low, at a higher build cost. Backup generators still test at 95 dBA.'
+  }[model.cool];
+
+  ringLayer.clearLayers();
+  [...c.rings].reverse().forEach(r=>L.circle([d.lat,d.lng],{radius:r.r,stroke:false,fillColor:r.col,fillOpacity:r.op,interactive:false}).addTo(ringLayer));
+  if(fly){
+    const outer=L.circle([d.lat,d.lng],{radius:c.rings[4].r*1.3});
+    const pad=window.innerWidth<768?[20,window.innerHeight*.58+20]:[40,440];
+    map.flyToBounds(outer.getBounds(),{paddingTopLeft:[20,80],paddingBottomRight:pad,duration:1.4,maxZoom:16});
+  }
+}
+</script>
+</body>
+</html>

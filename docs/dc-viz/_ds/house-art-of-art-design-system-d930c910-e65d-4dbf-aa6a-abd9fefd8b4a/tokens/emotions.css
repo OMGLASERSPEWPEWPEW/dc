@@ -1,0 +1,23 @@
+/* The twelve feelings (EMOTIONS.md). Base colours are theme-invariant. Wheel order = clockwise from 12 o'clock. */
+:root {
+  --emo-delighted: oklch(0.82 0.15 90);
+  --emo-electrified: oklch(0.80 0.15 60);
+  --emo-furious: oklch(0.66 0.19 35);
+  --emo-gutted: oklch(0.62 0.19 18);
+  --emo-aching: oklch(0.58 0.12 330);
+  --emo-cracked-open: oklch(0.64 0.18 350);
+  --emo-unsettled: oklch(0.58 0.16 300);
+  --emo-transported: oklch(0.60 0.14 255);
+  --emo-seen: oklch(0.66 0.12 195);
+  --emo-held: oklch(0.68 0.13 150);
+  --emo-buzzing: oklch(0.76 0.16 120);
+  --emo-bored: oklch(0.55 0.02 80);
+
+  /* Genre hues: text oklch(0.82 0.15 H), fill oklch(0.22 0.05 H) */
+  --genre-hue-musical: 90; /* @kind other */
+  --genre-hue-drama: 250; /* @kind other */
+  --genre-hue-experimental: 300; /* @kind other */
+  --genre-hue-classic: 55; /* @kind other */
+  --genre-hue-new-work: 150; /* @kind other */
+  --genre-hue-thriller: 25; /* @kind other */
+}

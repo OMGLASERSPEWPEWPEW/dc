@@ -1,0 +1,86 @@
+/* Verbatim from aoa/src/styles/tokens.css. :root = Paper (light, the default). .dark = Night. */
+:root {
+  --bg: #f6f1e3;
+  --bg-card: #ede7d7;
+  --bg-chrome: #e2dcca;
+  --rule: #d4cdb8;
+  --rule-soft: #e0d9c8;
+
+  --ink: #1c1814;
+  --ink-dim: #6b6355;
+  --ink-faint: #a69e8e;
+  --ink-ghost: #b8b1a2;
+  --ink-whisper: #cdc6b7;
+
+  --accent: oklch(0.52 0.14 55);
+  --accent-text: oklch(0.48 0.13 55);
+  --accent-border: oklch(0.65 0.09 55);
+  --accent-bg: oklch(0.92 0.04 55);
+  --accent-deep: oklch(0.55 0.10 55);
+  --accent-on: #f6f1e3;
+
+  --live: oklch(0.55 0.16 145);
+  --access: oklch(0.50 0.13 150);
+  --access-bg: oklch(0.92 0.04 150);
+  --access-border: oklch(0.36 0.07 150);
+
+  --danger: oklch(0.50 0.19 35);
+  --danger-bg: oklch(0.92 0.05 35);
+  --danger-border: oklch(0.78 0.10 35);
+
+  --member: oklch(0.44 0.13 235);
+  --dropin-bg: oklch(0.96 0.02 110);
+
+  --gold-gradient: linear-gradient(180deg, oklch(0.92 0.04 55), #f6f1e3); /* @kind color */
+
+  /* Semantic aliases */
+  --surface-page: var(--bg);
+  --surface-card: var(--bg-card);
+  --surface-chrome: var(--bg-chrome);
+  --border-default: var(--rule);
+  --border-soft: var(--rule-soft);
+  --text-primary: var(--ink);
+  --text-body: var(--ink-dim);
+  --text-label: var(--ink-faint);
+  --text-footnote: var(--ink-ghost);
+  --text-attribution: var(--ink-whisper);
+  --text-on-accent: var(--accent-on);
+  --seat-lit: oklch(0.86 0.15 55);
+  --seat-row-own: oklch(0.45 0.09 55);
+  --seat-row-ahead: oklch(0.55 0.11 55);
+}
+
+.dark {
+  --bg: #0c0a05;
+  --bg-card: #141109;
+  --bg-chrome: #1a1610;
+  --rule: #2b2720;
+  --rule-soft: #211d17;
+
+  --ink: #ebe5d6;
+  --ink-dim: #9c9586;
+  --ink-faint: #625b4c;
+  --ink-ghost: #4f4a3e;
+  --ink-whisper: #3f3a31;
+
+  --accent: oklch(0.80 0.14 55);
+  --accent-text: oklch(0.84 0.13 55);
+  --accent-border: oklch(0.42 0.09 55);
+  --accent-bg: oklch(0.20 0.04 55);
+  --accent-deep: oklch(0.45 0.10 55);
+  --accent-on: #0c0a05;
+
+  --live: oklch(0.74 0.16 145);
+  --access: oklch(0.68 0.13 150);
+  --access-bg: oklch(0.20 0.04 150);
+  --access-border: oklch(0.36 0.07 150);
+
+  --danger: oklch(0.66 0.19 35);
+  --danger-bg: oklch(0.20 0.05 35);
+  --danger-border: oklch(0.35 0.10 35);
+
+  --member: oklch(0.62 0.13 235);
+  --dropin-bg: oklch(0.16 0.02 110);
+
+  --gold-gradient: linear-gradient(180deg, oklch(0.16 0.04 55), #0c0a05); /* @kind color */
+}

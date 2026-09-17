@@ -1,0 +1,24 @@
+:root {
+  --radius-tag: 2px;      /* tags, tiles, poster thumbs, spectrum bars, seats */
+  --radius-control: 3px;  /* buttons, cards, panels, inputs */
+  --radius-pill: 9999px;  /* emotion pills, filter chips, avatars, wheel nodes */
+  --radius-sheet: 16px 16px 0 0;
+
+  --page-x: 20px;
+  --section-y: 16px;
+  --space-5: 5px; --space-6: 6px; --space-8: 8px; --space-10: 10px; --space-12: 12px;
+  --space-14: 14px; --space-16: 16px; --space-18: 18px; --space-24: 24px;
+
+  --tap-min: 44px; --btn-h: 46px; --cta-h: 50px; --tab-h: 48px; --wheel-node: 66px; --tabbar-h: 79px;
+
+  /* Rules, not shadows. The only legal shadows: */
+  --shadow-sheet: 0 -14px 44px rgba(0,0,0,.75);
+  --shadow-marker: 0 3px 8px rgba(0,0,0,.7);
+  --glow-seat: 0 0 10px var(--accent);
+
+  --ease-sheet: cubic-bezier(.2,.8,.2,1); /* @kind other */
+  --dur-state: 120ms; /* @kind other */
+  --dur-toggle: 160ms; /* @kind other */
+  --dur-sheet: 300ms; /* @kind other */
+  --dur-rankup: 400ms; /* @kind other */
+}

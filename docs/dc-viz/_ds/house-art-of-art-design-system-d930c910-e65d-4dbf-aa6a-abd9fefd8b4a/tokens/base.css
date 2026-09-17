@@ -1,0 +1,9 @@
+body { margin: 0; background-color: var(--bg); color: var(--ink); font-family: var(--font-body); }
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { color: var(--accent); }
+button { font: inherit; }
+@keyframes marquee-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes live-pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes wheel-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .marquee-track, .live-dot { animation: none !important; } }
