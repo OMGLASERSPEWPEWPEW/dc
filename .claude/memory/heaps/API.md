@@ -46,3 +46,27 @@
 
 ---
 
+## 2026-09-16_19-58-03 (session 6632eafb)
+
+**assistant**: [tool: Write]
+
+**assistant**: Now let me clean up the old files and type-check.
+
+**assistant**: [tool: Bash]
+
+**assistant**: [tool: Bash]
+
+**assistant**: Two type issues with Mapbox GL API. Let me fix them.
+
+**assistant**: [tool: Edit]
+
+**assistant**: [tool: Edit]
+
+**assistant**: [tool: Bash]
+
+**assistant**: Types check clean. Let me restart the dev server on port 5209.
+
+**assistant**: [tool: Bash]
+
+---
+
