@@ -1,0 +1,43 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {"type": "command", "command": "bash .claude/hooks/ghostty-title.sh"},
+          {"type": "command", "command": "bash .claude/hooks/sota-sync.sh"},
+          {"type": "command", "command": "bash .claude/hooks/journal-check.sh"},
+          {"type": "command", "command": "bash .claude/hooks/zephyr-init.sh"}
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "bash .claude/hooks/git-push-confirm.sh"}
+        ]
+      },
+      {
+        "hooks": [
+          {"type": "command", "command": "bash .claude/hooks/ghostty-working.sh"},
+          {"type": "command", "command": "bash .claude/hooks/session-monitor-working.sh"}
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {"type": "command", "command": "bash .claude/hooks/cost-tracker.sh"},
+          {"type": "command", "command": "bash .claude/hooks/context-stamp.sh"},
+          {"type": "command", "command": "bash .claude/hooks/conversation-logger.sh"},
+          {"type": "command", "command": "bash .claude/hooks/completion-notification.sh"},
+          {"type": "command", "command": "bash .claude/hooks/promote-hook-detector.sh"},
+          {"type": "command", "command": "bash .claude/hooks/ripple-capture.sh"},
+          {"type": "command", "command": "bash .claude/hooks/sync-todo.sh"},
+          {"type": "command", "command": "bash .claude/hooks/ghostty-done.sh"},
+          {"type": "command", "command": "bash .claude/hooks/session-monitor-waiting.sh"}
+        ]
+      }
+    ]
+  }
+}
