@@ -1,46 +1,36 @@
-import circle from '@turf/circle'
-import { featureCollection } from '@turf/helpers'
-import { NOISE_SOURCE_DBA, NOISE_REF_DISTANCE_M, NOISE_THRESHOLDS } from './constants'
-import type { NoiseContour } from './types'
+import { NOISE_BASE_DBA, NOISE_ADJ, NOISE_RINGS } from './constants'
 
-export function calculateNoiseContours(
-  sourceDba = NOISE_SOURCE_DBA,
-  barrierDb = 0,
-): NoiseContour[] {
-  const effectiveSource = sourceDba - barrierDb
-
-  return NOISE_THRESHOLDS.map(({ dba, color, opacity, label }) => {
-    const drop = effectiveSource - dba
-    if (drop <= 0) return { thresholdDba: dba, radiusMeters: 0, color, opacity, label }
-    const radiusMeters = NOISE_REF_DISTANCE_M * Math.pow(10, drop / 20)
-    return { thresholdDba: dba, radiusMeters, color, opacity, label }
-  }).filter(c => c.radiusMeters > 0)
+export interface NoiseRing {
+  dba: number
+  color: string
+  opacity: number
+  label: string
+  radiusMeters: number
 }
 
-export function noiseContoursToGeoJSON(
-  lat: number,
-  lng: number,
-  sourceDba = NOISE_SOURCE_DBA,
-  barrierDb = 0,
-): GeoJSON.FeatureCollection {
-  const contours = calculateNoiseContours(sourceDba, barrierDb)
+export function calculateNoise(mw: number, coolingMethod: string): { sourceDba: number; units: number; rings: NoiseRing[] } {
+  const units = Math.max(1, Math.round(mw / 10))
+  const adj = NOISE_ADJ[coolingMethod] ?? 0
+  const sourceDba = NOISE_BASE_DBA + 10 * Math.log10(units) + adj
 
-  const features = contours
-    .sort((a, b) => b.radiusMeters - a.radiusMeters)
-    .map(contour => {
-      const feat = circle([lng, lat], contour.radiusMeters / 1000, {
-        steps: 64,
-        units: 'kilometers',
-      })
-      feat.properties = {
-        dba: contour.thresholdDba,
-        radius_m: contour.radiusMeters,
-        color: contour.color,
-        opacity: contour.opacity,
-        label: contour.label,
-      }
-      return feat
-    })
+  const rings = NOISE_RINGS.map(({ dba, color, opacity, label }) => {
+    const drop = sourceDba - dba
+    const radiusMeters = drop > 0 ? Math.pow(10, drop / 20) : 0
+    return { dba, color, opacity, label, radiusMeters }
+  }).filter(r => r.radiusMeters > 0)
 
-  return featureCollection(features)
+  return { sourceDba, units, rings }
+}
+
+export function noiseNarrative(units: number, rings: NoiseRing[]): string {
+  const sleepRing = rings.find(r => r.dba === 45)
+  if (!sleepRing) return ''
+  const far = sleepRing.radiusMeters
+  const blocks = far / 100
+
+  if (units > 1) {
+    const blockText = blocks < 1.5 ? 'a block' : `${Math.round(blocks)} blocks`
+    return `${units.toLocaleString('en-US')} chiller clusters running together. Sleep can be disturbed about ${blockText} out.`
+  }
+  return 'A single chiller cluster. Beyond the adjacent lot you would barely notice it.'
 }

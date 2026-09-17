@@ -1,10 +1,44 @@
 @import "tailwindcss";
 
-body {
+/* House design system · Night tokens */
+:root {
+  --bg: #0c0a05;
+  --bg-card: #141109;
+  --bg-chrome: #1a1610;
+  --rule: #2b2720;
+  --rule-soft: #211d17;
+
+  --ink: #ebe5d6;
+  --ink-dim: #9c9586;
+  --ink-faint: #625b4c;
+  --ink-ghost: #4f4a3e;
+  --ink-whisper: #3f3a31;
+
+  --accent: oklch(0.80 0.14 55);
+  --accent-text: oklch(0.84 0.13 55);
+  --accent-border: oklch(0.42 0.09 55);
+  --accent-bg: oklch(0.20 0.04 55);
+  --accent-on: #0c0a05;
+
+  --live: oklch(0.74 0.16 145);
+  --danger: oklch(0.66 0.19 35);
+  --member: oklch(0.62 0.13 235);
+
+  --glass: color-mix(in oklab, var(--bg) 92%, transparent);
+  --glass-dense: color-mix(in oklab, var(--bg) 96%, transparent);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
   margin: 0;
-  background: #020617;
-  color: #f1f5f9;
-  font-family: system-ui, -apple-system, sans-serif;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -16,31 +50,80 @@ body {
   overflow: hidden;
 }
 
-.font-mono {
-  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+a { color: var(--accent-text); }
+a:hover { color: var(--accent); }
+
+.mono {
+  font-family: 'Courier Prime', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
+
+.num {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* No CSS filter on Mapbox canvas — WebGL canvases don't reliably support CSS filters.
+   Instead we use a dark style directly. */
 
 .mapboxgl-ctrl-attrib {
-  opacity: 0.5;
+  background: var(--glass) !important;
+  color: var(--ink-faint) !important;
+  font-size: 9px;
+  letter-spacing: 0.04em;
 }
 
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+.mapboxgl-ctrl-attrib a {
+  color: var(--ink-dim) !important;
 }
 
-.animate-slide-up {
-  animation: slide-up 300ms ease-out;
+.mapboxgl-ctrl-group {
+  border: 1px solid var(--rule) !important;
+  box-shadow: none !important;
+  border-radius: 3px !important;
 }
 
+.mapboxgl-ctrl-group button {
+  background: var(--glass) !important;
+  color: var(--ink) !important;
+  border-bottom-color: var(--rule) !important;
+}
+
+/* Popup styling */
 .mapboxgl-popup-content {
-  background: #1e293b !important;
-  border: 1px solid #334155 !important;
-  border-radius: 8px !important;
-  padding: 8px 12px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+  background: var(--glass) !important;
+  backdrop-filter: blur(6px) !important;
+  border: 1px solid var(--rule) !important;
+  border-radius: 3px !important;
+  padding: 6px 9px !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
 }
 
 .mapboxgl-popup-tip {
-  border-top-color: #1e293b !important;
+  display: none !important;
+}
+
+/* Sheet animation */
+@keyframes sheet-up {
+  from { transform: translateY(110%); }
+  to { transform: translateY(0); }
+}
+
+.sheet-open {
+  animation: sheet-up 300ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Range input */
+input[type="range"] {
+  width: 100%;
+  height: 24px;
+  margin: 6px 0 0;
+  accent-color: oklch(0.80 0.14 55);
+  background: transparent;
+}
+
+@media (max-width: 767px) {
+  .sheet-mobile { height: 58vh !important; }
+  .key-hide-mobile { display: none !important; }
 }

@@ -4,18 +4,13 @@ export interface DataCenter {
   operator: string
   latitude: number
   longitude: number
-  address?: string
   city?: string
   state: string
-  county?: string
-  mw_capacity?: number
-  sqft?: number
-  cooling_method?: 'air' | 'evaporative' | 'hybrid' | 'liquid' | string
-  status: 'operating' | 'under_construction' | 'proposed' | 'approved' | 'suspended' | string
-  wue?: number
-  source_url?: string
+  mw_capacity: number
+  cooling_method: string
+  status: string
   source_name?: string
-  external_id?: string
+  source_url?: string
 }
 
 export interface WaterImpact {
@@ -24,12 +19,11 @@ export interface WaterImpact {
   equivalentHomes: number
   mwCapacity: number
   wue: number
+  kwhPerDay: number
 }
 
-export interface NoiseContour {
-  thresholdDba: number
-  radiusMeters: number
-  color: string
-  opacity: number
-  label: string
+export interface Model {
+  mw: number
+  cool: string
+  wue: number
 }

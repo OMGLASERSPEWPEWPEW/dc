@@ -1,146 +1,138 @@
 import { useEffect, useRef, useCallback } from 'react'
-import mapboxgl from 'mapbox-gl'
+import L from 'leaflet'
 import type { DataCenter } from '../lib/types'
-import { STATUS_COLORS, MW_BREAKPOINTS, MARKER_SIZES, US_CENTER, US_ZOOM } from '../lib/constants'
+import type { NoiseRing } from '../lib/noise'
+import { STATUS_CONFIG, MARKER_RADII, MW_BREAKPOINTS, US_CENTER, US_ZOOM } from '../lib/constants'
 
 interface MapViewProps {
   dataCenters: DataCenter[]
   onSelect: (dc: DataCenter | null) => void
   selectedId: string | null
-  filters: {
-    statuses: Set<string>
-    state: string | null
-    mwMin: number
-    mwMax: number
-    search: string
-  }
+  activeStatuses: Set<string>
+  noiseRings: NoiseRing[]
+  selectedDc: DataCenter | null
 }
 
-function markerSize(mw?: number): number {
-  if (!mw || mw < MW_BREAKPOINTS.small) return MARKER_SIZES.small
-  if (mw < MW_BREAKPOINTS.medium) return MARKER_SIZES.medium
-  return MARKER_SIZES.large
+function markerRadius(mw: number): number {
+  if (mw < MW_BREAKPOINTS.small) return MARKER_RADII.small
+  if (mw < MW_BREAKPOINTS.medium) return MARKER_RADII.medium
+  return MARKER_RADII.large
 }
 
-export default function MapView({ dataCenters, onSelect, selectedId, filters }: MapViewProps) {
+function statusColor(status: string): string {
+  return STATUS_CONFIG[status]?.oklch ?? 'oklch(0.5 0 0)'
+}
+
+export default function MapView({ dataCenters, onSelect, selectedId, activeStatuses, noiseRings, selectedDc }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<mapboxgl.Map | null>(null)
-  const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map())
+  const mapRef = useRef<L.Map | null>(null)
+  const markersLayerRef = useRef<L.LayerGroup | null>(null)
+  const ringsLayerRef = useRef<L.LayerGroup | null>(null)
 
-  const filtered = dataCenters.filter(dc => {
-    if (!filters.statuses.has(dc.status)) return false
-    if (filters.state && dc.state !== filters.state) return false
-    const mw = dc.mw_capacity ?? 0
-    if (mw < filters.mwMin || mw > filters.mwMax) return false
-    if (filters.search) {
-      const q = filters.search.toLowerCase()
-      const match = dc.name.toLowerCase().includes(q)
-        || dc.operator.toLowerCase().includes(q)
-        || (dc.city?.toLowerCase().includes(q))
-      if (!match) return false
-    }
-    return true
-  })
+  const filtered = dataCenters.filter(dc => activeStatuses.has(dc.status))
 
   const handleMarkerClick = useCallback((dc: DataCenter) => {
     onSelect(dc)
-    mapRef.current?.flyTo({ center: [dc.longitude, dc.latitude], zoom: 12, duration: 1500 })
   }, [onSelect])
 
+  // Init map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
 
-    mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
+    const map = L.map(containerRef.current, {
+      zoomControl: true,
+      attributionControl: true,
+    }).setView([US_CENTER[1], US_CENTER[0]], US_ZOOM)
 
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: US_CENTER,
-      zoom: US_ZOOM,
-      attributionControl: false,
-    })
+    map.zoomControl.setPosition('topright')
 
-    map.addControl(new mapboxgl.NavigationControl(), 'bottom-right')
-    map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left')
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map)
 
-    map.on('click', (e) => {
-      const target = e.originalEvent.target as HTMLElement
-      if (!target.closest('.dc-marker')) {
-        onSelect(null)
-      }
+    const ringsLayer = L.layerGroup().addTo(map)
+    const markersLayer = L.layerGroup().addTo(map)
+
+    map.on('click', () => {
+      onSelect(null)
     })
 
     mapRef.current = map
+    markersLayerRef.current = markersLayer
+    ringsLayerRef.current = ringsLayer
 
-    return () => { map.remove() }
+    return () => { map.remove(); mapRef.current = null }
   }, [onSelect])
 
+  // Draw markers
   useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
+    const markersLayer = markersLayerRef.current
+    if (!markersLayer) return
 
-    const currentIds = new Set(filtered.map(dc => dc.id))
-    const existing = markersRef.current
-
-    for (const [id, marker] of existing) {
-      if (!currentIds.has(id)) {
-        marker.remove()
-        existing.delete(id)
-      }
-    }
+    markersLayer.clearLayers()
 
     for (const dc of filtered) {
-      if (existing.has(dc.id)) continue
+      const r = markerRadius(dc.mw_capacity)
+      const color = statusColor(dc.status)
+      const dimmed = selectedId != null && selectedId !== dc.id
 
-      const size = markerSize(dc.mw_capacity)
-      const color = STATUS_COLORS[dc.status] || '#6b7280'
+      const marker = L.circleMarker([dc.latitude, dc.longitude], {
+        radius: r,
+        color: '#0c0a05',
+        weight: 1.5,
+        fillColor: color,
+        fillOpacity: dimmed ? 0.35 : 0.95,
+      })
 
-      const el = document.createElement('div')
-      el.className = 'dc-marker'
-      el.style.width = `${size}px`
-      el.style.height = `${size}px`
-      el.style.borderRadius = '50%'
-      el.style.backgroundColor = color
-      el.style.border = '2px solid rgba(255,255,255,0.3)'
-      el.style.cursor = 'pointer'
-      el.style.transition = 'transform 150ms ease'
-      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.15)' })
-      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)' })
-      el.addEventListener('click', (e) => {
-        e.stopPropagation()
+      marker.bindTooltip(
+        `<i>${dc.name}</i>${dc.operator} · ${dc.mw_capacity} MW`,
+        { direction: 'top', offset: [0, -8] },
+      )
+
+      marker.on('click', (e) => {
+        L.DomEvent.stop(e)
         handleMarkerClick(dc)
       })
 
-      const popup = new mapboxgl.Popup({ offset: 12, closeButton: false, className: 'dc-popup' })
-        .setHTML(`
-          <div style="color:#f1f5f9;font-size:13px;line-height:1.4">
-            <strong>${dc.name}</strong><br/>
-            ${dc.operator}${dc.mw_capacity ? ` · ${dc.mw_capacity} MW` : ''}
-          </div>
-        `)
-
-      const marker = new mapboxgl.Marker({ element: el })
-        .setLngLat([dc.longitude, dc.latitude])
-        .setPopup(popup)
-        .addTo(map)
-
-      el.addEventListener('mouseenter', () => popup.addTo(map))
-      el.addEventListener('mouseleave', () => popup.remove())
-
-      existing.set(dc.id, marker)
+      marker.addTo(markersLayer)
     }
-  }, [filtered, handleMarkerClick])
+  }, [filtered, selectedId, handleMarkerClick])
 
+  // Draw noise rings
   useEffect(() => {
-    for (const [id, marker] of markersRef.current) {
-      const el = marker.getElement()
-      if (id === selectedId) {
-        el.style.boxShadow = '0 0 0 3px rgba(255,255,255,0.6)'
-      } else {
-        el.style.boxShadow = 'none'
-      }
+    const map = mapRef.current
+    const ringsLayer = ringsLayerRef.current
+    if (!map || !ringsLayer) return
+
+    ringsLayer.clearLayers()
+
+    if (!selectedDc || noiseRings.length === 0) return
+
+    const sorted = [...noiseRings].sort((a, b) => b.radiusMeters - a.radiusMeters)
+
+    for (const ring of sorted) {
+      L.circle([selectedDc.latitude, selectedDc.longitude], {
+        radius: ring.radiusMeters,
+        stroke: false,
+        fillColor: ring.color,
+        fillOpacity: ring.opacity,
+        interactive: false,
+      }).addTo(ringsLayer)
     }
-  }, [selectedId])
+
+    // Fly to fit outermost ring
+    const outer = L.circle([selectedDc.latitude, selectedDc.longitude], {
+      radius: sorted[0].radiusMeters * 1.3,
+    })
+    const bottomPad = window.innerWidth < 768 ? window.innerHeight * 0.58 + 20 : 440
+    map.flyToBounds(outer.getBounds(), {
+      paddingTopLeft: [20, 80] as L.PointTuple,
+      paddingBottomRight: [20, bottomPad] as L.PointTuple,
+      duration: 1.4,
+      maxZoom: 16,
+    })
+  }, [noiseRings, selectedDc])
 
   return <div ref={containerRef} className="w-full h-full" />
 }

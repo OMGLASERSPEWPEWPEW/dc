@@ -1,57 +1,77 @@
-import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Info } from 'lucide-react'
+import { useState, useMemo, useCallback } from 'react'
 import MapView from '../components/MapView'
-import FilterBar from '../components/FilterBar'
+import TopBar from '../components/TopBar'
 import DataCenterSheet from '../components/DataCenterSheet'
-import type { DataCenter } from '../lib/types'
+import MapKey from '../components/MapKey'
+import Hint from '../components/Hint'
+import type { DataCenter, Model } from '../lib/types'
+import { calculateNoise } from '../lib/noise'
+import { WUE_DEFAULT } from '../lib/constants'
 import seedData from '../data/seed.json'
 
 const dataCenters = seedData as DataCenter[]
 
 export default function MapHome() {
   const [selectedDc, setSelectedDc] = useState<DataCenter | null>(null)
+  const [model, setModel] = useState<Model>({ mw: 100, cool: 'evaporative', wue: 1.8 })
+  const [activeStatuses, setActiveStatuses] = useState(new Set(['operating', 'under_construction', 'proposed']))
 
-  const [filters, setFilters] = useState({
-    statuses: new Set(['operating', 'under_construction', 'proposed']),
-    state: null as string | null,
-    mwMin: 0,
-    mwMax: 9999,
-    search: '',
-  })
+  const handleSelect = useCallback((dc: DataCenter | null) => {
+    setSelectedDc(dc)
+    if (dc) {
+      setModel({ mw: dc.mw_capacity, cool: dc.cooling_method, wue: WUE_DEFAULT[dc.cooling_method] ?? 1.8 })
+    }
+  }, [])
 
-  const maxMw = useMemo(
-    () => Math.max(...dataCenters.map(dc => dc.mw_capacity ?? 0)),
-    [],
+  const toggleStatus = useCallback((status: string) => {
+    setActiveStatuses(prev => {
+      const next = new Set(prev)
+      if (next.has(status)) {
+        if (next.size > 1) next.delete(status)
+      } else {
+        next.add(status)
+      }
+      return next
+    })
+  }, [])
+
+  const noiseResult = useMemo(
+    () => selectedDc ? calculateNoise(model.mw, model.cool) : { sourceDba: 0, units: 0, rings: [] },
+    [selectedDc, model.mw, model.cool],
+  )
+
+  const visibleCount = useMemo(
+    () => dataCenters.filter(dc => activeStatuses.has(dc.status)).length,
+    [activeStatuses],
   )
 
   return (
     <div className="relative flex-1">
       <MapView
         dataCenters={dataCenters}
-        onSelect={setSelectedDc}
+        onSelect={handleSelect}
         selectedId={selectedDc?.id ?? null}
-        filters={filters}
+        activeStatuses={activeStatuses}
+        noiseRings={noiseResult.rings}
+        selectedDc={selectedDc}
       />
 
-      <FilterBar
+      <TopBar
         dataCenters={dataCenters}
-        filters={filters}
-        onFiltersChange={setFilters}
+        activeStatuses={activeStatuses}
+        onToggleStatus={toggleStatus}
+        visibleCount={visibleCount}
       />
 
-      <Link
-        to="/about"
-        className="absolute top-3 right-3 z-10 p-2 bg-slate-900/80 backdrop-blur-sm rounded-full border border-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
-      >
-        <Info size={18} />
-      </Link>
+      <MapKey sheetOpen={!!selectedDc} />
+      <Hint visible={!selectedDc} />
 
       {selectedDc && (
         <DataCenterSheet
           dc={selectedDc}
+          model={model}
+          onModelChange={setModel}
           onClose={() => setSelectedDc(null)}
-          maxMw={maxMw}
         />
       )}
     </div>
